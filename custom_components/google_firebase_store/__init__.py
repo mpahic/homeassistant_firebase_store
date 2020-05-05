@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import os
+import requests
 from typing import Any, Dict
 
 import firebase_admin
@@ -19,6 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = "google_firebase_store"
 
 CONF_SERVICE_PRINCIPAL = "credentials_json"
+CONF_WEB_TOKEN = "web_token"
 CONF_FILTER = "filter"
 
 CONFIG_SCHEMA = vol.Schema(
@@ -26,12 +28,15 @@ CONFIG_SCHEMA = vol.Schema(
         DOMAIN: vol.Schema(
             {
                 vol.Required(CONF_SERVICE_PRINCIPAL): cv.string,
+                vol.Optional(CONF_WEB_TOKEN): cv.string,
                 vol.Optional(CONF_FILTER): FILTER_SCHEMA,
             }
         )
     },
     extra=vol.ALLOW_EXTRA,
 )
+
+url = 'http://localhost:8123/api/services/homeassistant/turn_on'
 
 
 def setup(hass: HomeAssistant, yaml_config: Dict[str, Any]):
@@ -41,6 +46,9 @@ def setup(hass: HomeAssistant, yaml_config: Dict[str, Any]):
     service_principal_path = os.path.join(
         hass.config.config_dir, config[CONF_SERVICE_PRINCIPAL]
     )
+    
+    token = config[CONF_WEB_TOKEN]
+    hed = {'Authorization': 'Bearer ' + token}
 
     if not os.path.isfile(service_principal_path):
         _LOGGER.error("Path to credentials file cannot be found")
@@ -75,10 +83,10 @@ def setup(hass: HomeAssistant, yaml_config: Dict[str, Any]):
         print(u'Current triggers:')
         for change in changes:
             if change.type.name == 'MODIFIED':
-                hass.callService('homeassistant', 'turn_on', {
-                  entity_id: 'input_number.'+ u'{}'.format(doc.id)
-                });
-                _LOGGER.warning("Firebase plugin fire: " + u'{}'.format(change.document.id))
+                data = {"entity_id": "input_boolean." + u'{}'.format(change.document.id)}
+                _LOGGER.debug("Firebase plugin token: " + token)
+                response = requests.post(url, json=data, headers=hed)
+                _LOGGER.debug("Firebase plugin fire: " + u'{}'.format(change.document.id))
 
     col_query = db.collection(u'triggers')
 
