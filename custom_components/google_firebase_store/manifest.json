@@ -1,0 +1,9 @@
+{
+  "domain": "google_firebase_store",
+  "name": "Google google_firebase_store",
+  "documentation": "https://www.home-assistant.io/integrations/google_firebase_store",
+  "requirements": [
+  ],
+  "dependencies": [],
+  "codeowners": []
+}
